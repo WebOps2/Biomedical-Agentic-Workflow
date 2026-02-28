@@ -2,6 +2,12 @@ from __future__ import annotations
 from lxml import etree
 from pathlib import Path
 
+def join_text_parts(parts: list[str]) -> str:
+    """Join a list of text parts into a single string."""
+    text = " ".join([part.strip() for part in parts if part.strip()])
+    return " ".join(text.split())
+print(join_text_parts(["Hello", "world", "!"]))
+
 def parse_xml(file_path: Path) -> dict:
     """Parse an XML file and return a dictionary of the data."""
     file_path = Path(str(file_path))
@@ -30,6 +36,14 @@ def parse_xml(file_path: Path) -> dict:
         license = license_value[0]
     else:
         license = None
+    ocr_parts = root.xpath("//custom-meta[@meta-name='pmc-prop-is-ocr-article']/@meta-value/text()")
+    if ocr_parts:
+        is_ocr = ocr_parts[0].lower() == "yes"
+    else:
+        is_ocr = False
+    body_parts = root.xpath("//body//text()")
+    body = join_text_parts(body_parts)
+    # print(body_parts)
         
     
     return {
@@ -47,7 +61,8 @@ def parse_xml(file_path: Path) -> dict:
             "provider": "PMC",
             "s3_prefix": pmcid_ver,
             "xml_filename": file_path.name,
-        }
+        },
+        "body": body,
     }
 
 print(parse_xml(Path("data/pmc_sample/PMC5939738.1.xml")))
