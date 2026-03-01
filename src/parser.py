@@ -6,14 +6,14 @@ def join_text_parts(parts: list[str]) -> str:
     """Join a list of text parts into a single string."""
     text = " ".join([part.strip() for part in parts if part.strip()])
     return " ".join(text.split())
-print(join_text_parts(["Hello", "world", "!"]))
 
 def parse_xml(file_path: Path) -> dict:
     """Parse an XML file and return a dictionary of the data."""
     file_path = Path(str(file_path))
     tree = etree.parse(file_path)
     root = tree.getroot()
-    print(root)
+    abstract_parts = root.xpath("//abstract//text()")
+    print("Abstract found:", len(abstract_parts))
     pmcid = root.find(".//article-id[@pub-id-type='pmcid']").text
     pmcid_ver = root.find(".//article-id[@pub-id-type='pmcid-ver']").text
     pmid = root.find(".//article-id[@pub-id-type='pmid']").text
@@ -65,4 +65,4 @@ def parse_xml(file_path: Path) -> dict:
         "body": body,
     }
 
-print(parse_xml(Path("data/pmc_sample/PMC5939738.1.xml")))
+print(parse_xml(Path("data/pmc_sample/PMC10000003.1.xml")))
