@@ -22,6 +22,8 @@ class Retriever:
         self.model = SentenceTransformer(model_name)
         self.fallback_chars = fallback_chars
         self.normalize = normalize
+        self.index: Optional[faiss.Index] = None
+        self.meta_data: List[Dict[str, Any]] = [] 
         
     def build_embed_text(self, article: Dict[str, Any]) -> Tuple[str, str]:
         """Build an embedding for the article."""
@@ -39,5 +41,54 @@ class Retriever:
             convert_to_numpy=True,
             show_progress_bar=True,
         ).astype("float32")
-        vecs = faiss.normalize_L2(vecs)
+        faiss.normalize_L2(vecs)
         return vecs
+    
+    def build_index(self, xml_dir: str) -> faiss.Index:
+        "Takes xml files converts them to embeddings and builds an index"
+        xml_dir = Path(xml_dir)
+        xml_files = sorted(xml_dir.rglob("*.xml"))
+        if not xml_files:
+            raise FileNotFoundError(f"No XML files found in {xml_dir}")
+        
+        articles : List[Dict[str, Any]] = []
+        embedded_texts : List[str] = []
+        
+        for xml_file in xml_files:
+            try:
+                article = parse_xml(xml_file)
+            except Exception as e:
+                print(f"Error parsing {xml_file}: {e}")
+                continue
+            snippet, embed_text = self.build_embed_text(article)
+            articles.append(article)
+            embedded_texts.append(embed_text)
+            
+            self.meta_data.append(
+                {
+                    "pmcid": article["pmcid"],
+                    "title": article["title"],
+                    "snippet": snippet,
+                }
+            )
+            
+        if not articles or not embedded_texts:
+            raise ValueError("No articles or embedded texts found")
+             
+        vecs = self.embed(embedded_texts)
+        self.index = faiss.IndexFlatIP(vecs.shape[1])
+        self.index.add(vecs)
+    
+    def retrieve(self, query: str, k: int) -> List[RetrievedArticle]:  
+        "Retrieves articles based on a query"
+        if self.index is None:
+            raise ValueError("Index not built")
+        
+        query_vec = self.embed([query])
+        scores, indices = self.index.search(query_vec, k)
+        return [self.meta_data[i] for i in indices[0]]
+    
+retriever = Retriever()
+index = retriever.build_index("data/pmc_sample")
+res = retriever.retrieve("breast cancer drug resistance", k=5)
+print(res)

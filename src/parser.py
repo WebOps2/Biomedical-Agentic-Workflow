@@ -7,17 +7,20 @@ def join_text_parts(parts: list[str]) -> str:
     text = " ".join([part.strip() for part in parts if part.strip()])
     return " ".join(text.split())
 
+def find_text(root, xpath: str) -> str:
+    "Find text in the XML file using an XPath expression."
+    elem = root.find(xpath)
+    return elem.text if elem is not None else 'N/A'
+
 def parse_xml(file_path: Path) -> dict:
     """Parse an XML file and return a dictionary of the data."""
     file_path = Path(str(file_path))
     tree = etree.parse(file_path)
     root = tree.getroot()
-    abstract_parts = root.xpath("//abstract//text()")
-    print("Abstract found:", len(abstract_parts))
     pmcid = root.find(".//article-id[@pub-id-type='pmcid']").text
     pmcid_ver = root.find(".//article-id[@pub-id-type='pmcid-ver']").text
-    pmid = root.find(".//article-id[@pub-id-type='pmid']").text
-    title = root.find(".//article-title").text
+    # pmid = root.find(".//article-id[@pub-id-type='pmid']").text
+    title = find_text(root, ".//article-title")
     journal_title = root.find(".//journal-title").text
     year = root.find(".//pub-date[@pub-type='ppub']/year").text
     month = root.find(".//pub-date[@pub-type='ppub']/month").text
@@ -49,7 +52,6 @@ def parse_xml(file_path: Path) -> dict:
     return {
         "pmcid": pmcid,
         "pmcid_ver": pmcid_ver,
-        "pmid": pmid,
         "title": title,
         "journal_title": journal_title,
         "year": year,
