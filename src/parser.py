@@ -67,4 +67,4 @@ def parse_xml(file_path: Path) -> dict:
         "body": body,
     }
 
-print(parse_xml(Path("data/pmc_sample/PMC10000003.1.xml")))
+# print(parse_xml(Path("data/pmc_sample/PMC10000003.1.xml")))

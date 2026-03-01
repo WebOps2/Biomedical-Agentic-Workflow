@@ -12,9 +12,8 @@ from parser import parse_xml
 class RetrievedArticle:
     """A class representing a retrieved article."""
     pmcid: str
-    pmid: str
     title: str
-    body: str
+    snippet: str
     score: float
     
 class Retriever: 
@@ -86,9 +85,24 @@ class Retriever:
         
         query_vec = self.embed([query])
         scores, indices = self.index.search(query_vec, k)
-        return [self.meta_data[i] for i in indices[0]]
+        print(scores)
+        print(indices)
+        
+        result : List[RetrievedArticle] = []
+        
+        for scores, idx in zip(scores[0], indices[0]):
+            if idx == -1:
+                continue
+            result.append(RetrievedArticle(
+                pmcid=self.meta_data[idx]["pmcid"],
+                title=self.meta_data[idx]["title"],
+                snippet=self.meta_data[idx]["snippet"],
+                score=scores,
+            ))
+        return result
+        # return [self.meta_data[i] for i in indices[0]]
     
 retriever = Retriever()
 index = retriever.build_index("data/pmc_sample")
-res = retriever.retrieve("breast cancer drug resistance", k=5)
+res = retriever.retrieve("The semi-annual meeting of the Quincy Medical Societyt", k=1)
 print(res)
